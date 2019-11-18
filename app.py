@@ -5,8 +5,10 @@ from mahjongpy import MahjongTable, MahjongTile, MahjongPlayer
 
 table = MahjongTable()
 p1,p2,p3,p4 = table.players
-#p1.hands = MahjongTile.make_hands_set('129','19','19','1234','123')
-p1.hands_display()
+#p1.hands = MahjongTile.make_hands_set('129','19','19','1234','123') #和了テスト(国士無双13面待ち)
+#p1.hands = MahjongTile.make_hands_set('1122','5566','3388','34') #ポンテスト
+#p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #チーテスト
+
  
 class App:
     def __init__(self):
@@ -87,6 +89,7 @@ class App:
                 self.wait_pon = False
                 self.ok = False
             if self.wait_chi:
+                print('chi')
                 p1.chi(self.prev_player.discards[-1])
                 self.wait_btn = False
                 self.wait_chi = False
@@ -117,7 +120,7 @@ class App:
                 pyxel.text(100,90+i*10,y,0)
         else :
             pyxel.cls(3)
-            pyxel.rectb(100,100,42,42,0)
+            pyxel.rectb(95,100,54,42,0)
             pyxel.text(50,50,str(p1.shanten()),0)
             pyxel.text(50,70,str(p1.turn),0)
             self.draw_hands()
@@ -193,14 +196,19 @@ class App:
            else:
                 self.draw_tile(33+i*11,225,t)
         for i,m in enumerate(melds):
+            padding = 0
             for j,t in enumerate(m):
-                if m.count(t)==1:
+                if m.count(t)==1: #chi
                     if j == 0:
-                        self.draw_tile(204-i*30+j*11,233,t,90)
+                        self.draw_tile(204-i*40+j*11,233,t,90)
                     else:
-                        self.draw_tile(210-i*30+j*11,225,t)
-                else:
-                    self.draw_tile(210-i*30+j*11,225,t)
+                        self.draw_tile(210-i*40+j*11,225,t)
+                else: #pon
+                    if t.from_tacha:
+                        self.draw_tile(204-i*40+j*11,233,t,90)
+                        padding = 7
+                    else:
+                        self.draw_tile(203-i*40+j*11+padding,225,t)
 
     def draw_tile_only(self, x, y,tile,angle):
         if angle%180==0:
