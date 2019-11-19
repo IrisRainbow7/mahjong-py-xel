@@ -8,6 +8,7 @@ p1,p2,p3,p4 = table.players
 #p1.hands = MahjongTile.make_hands_set('129','19','19','1234','123') #和了テスト(国士無双13面待ち)
 #p1.hands = MahjongTile.make_hands_set('1122','5566','3388','34') #ポンテスト
 #p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #チーテスト
+#p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #リーチテスト
 
  
 class App:
@@ -22,6 +23,9 @@ class App:
         self.wait_ron = False
         self.wait_pon = False
         self.wait_chi = False
+        self.wait_riichi = False
+        self.wait_minkan = False
+        self.wait_ankan = False
         self.ok = False
         self.cancel = False
         self.screen = ""
@@ -63,11 +67,18 @@ class App:
                 discard_tile = i.hands[random.randrange(14)]
                 self.prev_player = i
                 i.discard(discard_tile)
-                if p1.can_pon(discard_tile):
+                if p1.can_ron(discard_tile):
+                    self.wait_ron = True
+                    self.wait_btn = True
+                    break
+                elif p1.can_minkan(discard_tile) and (not p1.is_riichi):
+                    self.wait_minkan = True
+                    self.wait_btn = True
+                elif p1.can_pon(discard_tile) and (not p1.is_riichi):
                     self.wait_pon = True
                     self.wait_btn = True
                     break
-                elif i==p4 and p1.can_chi(discard_tile):
+                elif i==p4 and p1.can_chi(discard_tile) and (not p1.is_riichi):
                     self.wait_chi = True
                     self.wait_btn = True
                     break
@@ -77,23 +88,33 @@ class App:
         if p1.is_hora():
             self.wait_tumo = True
             self.wait_btn = True
+        if p1.is_menzen() and  p1.is_tenpai() and (not p1.is_riichi):
+            self.wait_riichi = True
+            self.wait_btn = True
         if self.ok:
             if self.wait_tumo:
+                p1.tumo()
                 self.screen = "score"
                 self.wait_tumo = False
-                self.wait_btn = False
-                self.ok = False
+            if self.wait_ron:
+                self.screen = "score"
+                p1.ron(self.prev_player.discards[-1])
+                self.wait_ron = False
+            if self.wait_minkan:
+                p1.kan(self.prev_player.discards[-1])
+                self.wait_minkan = False
             if self.wait_pon:
                 p1.pon(self.prev_player.discards[-1])
-                self.wait_btn = False
                 self.wait_pon = False
-                self.ok = False
             if self.wait_chi:
                 print('chi')
                 p1.chi(self.prev_player.discards[-1])
-                self.wait_btn = False
                 self.wait_chi = False
-                self.ok = False
+            if self.wait_riichi:
+                p1.riichi()
+                self.wait_riichi = False
+            self.wait_btn = False
+            self.ok = False
         if self.cancel:
             if self.wait_pon or self.wait_chi:
                 self.wait_btn = False
@@ -107,6 +128,10 @@ class App:
                         self.prev_player = i
                         i.discard(discard_tile)
                 table.draw(p1)
+            if self.wait_riichi:
+                self.wait_btn = False
+                self.cancel = False
+                self.wait_riichi = False
     
 
     def draw(self):
@@ -118,11 +143,15 @@ class App:
             pyxel.text(70,90,'YAKU:',0)
             for i,y in enumerate(p1.yakus()):
                 pyxel.text(100,90+i*10,y,0)
+        elif self.screen == 'test':
+            pass
         else :
             pyxel.cls(3)
             pyxel.rectb(95,100,54,42,0)
             pyxel.text(50,50,str(p1.shanten()),0)
             pyxel.text(50,70,str(p1.turn),0)
+            if p1.is_riichi:
+                pyxel.bltm(115,135,0,8,14,2,1,0)
             self.draw_hands()
             for i,p in enumerate(table.players):
                 self.draw_discards(p, i*90)
@@ -144,11 +173,16 @@ class App:
                 elif index == 1:
                     pyxel.bltm(151+(l//6)*17, 138-(l%6)*9,0,0,21,size_x,size_y)
 
-
+            if self.wait_ron:
+                self.draw_button('RON','PASS')
+            if self.wait_minkan:
+                self.draw_button('KAN','PASS')
             if self.wait_pon:
                 self.draw_button('PON','PASS')
             if self.wait_chi:
                 self.draw_button('CHI','PASS')
+            if self.wait_riichi:
+                self.draw_button('RICHI','PASS')
 
 
     def draw_button(self, msg1, msg2):
@@ -179,6 +213,7 @@ class App:
     def draw_hands(self):
         tiles = p1.hands[:]
         melds = p1.melds[:]
+        minkans = p1.minkans[:]
         if p1.turn != 0 and p1.latest_tile.tile_type is not None and p1.latest_tile in tiles:
             try:
                 tiles.remove(p1.latest_tile)
@@ -203,12 +238,24 @@ class App:
                         self.draw_tile(204-i*40+j*11,233,t,90)
                     else:
                         self.draw_tile(210-i*40+j*11,225,t)
+                elif t in p1.minkans[0]: #kan 要修正
+                    continue
                 else: #pon
                     if t.from_tacha:
                         self.draw_tile(204-i*40+j*11,233,t,90)
                         padding = 7
                     else:
                         self.draw_tile(203-i*40+j*11+padding,225,t)
+        for i,m in enumerate(minkans):
+            i += len(melds)
+            padding = 0
+            for j, t in enumerate(m):
+                if t.from_tacha:
+                    self.draw_tile(204-i*40+j*11,233,t,90)
+                    padding = 7
+                else:
+                    self.draw_tile(203-i*40+j*11+padding,225,t)
+ 
 
     def draw_tile_only(self, x, y,tile,angle):
         if angle%180==0:
