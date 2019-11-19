@@ -95,9 +95,13 @@ class App:
             if self.wait_tumo:
                 p1.tumo()
                 self.screen = "score"
+                print(p1.score_fu())
+                print(p1.score_han())
                 self.wait_tumo = False
             if self.wait_ron:
                 self.screen = "score"
+                print(p1.score_fu())
+                print(p1.score_han())
                 p1.ron(self.prev_player.discards[-1])
                 self.wait_ron = False
             if self.wait_minkan:
@@ -140,9 +144,12 @@ class App:
             pyxel.text(70,50,str(p1.score_fu())+' FU',0)
             pyxel.text(70,60,str(p1.score_han())+' HAN',0)
             pyxel.text(70,70,str(p1.score())+' Points',0)
-            pyxel.text(70,90,'YAKU:',0)
+            pyxel.text(70,80,'Dora: '+str(p1.displayed_doras()),0)
+            pyxel.text(70,90,'AkaDora: '+str(p1.akadoras()),0)
+            pyxel.text(70,100,'YAKU:',0)
             for i,y in enumerate(p1.yakus()):
-                pyxel.text(100,90+i*10,y,0)
+                pyxel.text(100,100+i*10,y,0)
+            self.draw_hands()
         elif self.screen == 'test':
             pass
         else :
@@ -151,13 +158,22 @@ class App:
             pyxel.text(50,50,str(p1.shanten()),0)
             pyxel.text(50,70,str(p1.turn),0)
             if p1.is_riichi:
-                pyxel.bltm(115,135,0,8,14,2,1,0)
+                pyxel.bltm(110,131,0,8,14,2,1,0)
             self.draw_hands()
+            for i,t in enumerate(table.dora_showing_tiles):
+                self.draw_tile_only(10,10,t,0)
+            wind_x = [97, 132, 139, 95]
+            wind_y = [125, 132, 101, 102]
+            score_x = [108]
+            score_y = [135]
+            pyxel.text(score_x[0],score_y[0],str(p1.points),0)
             for i,p in enumerate(table.players):
+                self.draw_tile_trans(wind_x[i],wind_y[i],MahjongTile(p.wind),i*90,7)
+                #pyxel.text(score_x[i],score_y[i],str(p.points),0)
                 self.draw_discards(p, i*90)
             if self.wait_tumo:
                 self.draw_button('TUMO','PASS')
-            if self.wait_pon or self.wait_chi:
+            if self.wait_pon or self.wait_chi or self.wait_ron:
                 index = table.players.index(self.prev_player)
                 if index == 2:
                     size_x = 1
@@ -238,7 +254,7 @@ class App:
                         self.draw_tile(204-i*40+j*11,233,t,90)
                     else:
                         self.draw_tile(210-i*40+j*11,225,t)
-                elif t in p1.minkans[0]: #kan 要修正
+                elif [(t in k) for k in p1.minkans]: #kan
                     continue
                 else: #pon
                     if t.from_tacha:
@@ -256,6 +272,32 @@ class App:
                 else:
                     self.draw_tile(203-i*40+j*11+padding,225,t)
  
+    def draw_tile_trans(self,x,y,tile,angle,color):
+        if angle%180==0:
+            index_y = {'manzu':0, 'souzu':2, 'pinzu':4,'ton':6,'nan':6,'sha':6,'pei':6,'haku':8,'hatu':8,'tyun':8}
+            index_x = {'ton':0,'nan':1,'sha':2,'pei':3,'haku':0,'hatu':1,'tyun':2}
+            size_x = 1
+            size_y = 2
+        else:
+            index_y = {'manzu':10, 'souzu':11, 'pinzu':12,'ton':13,'nan':13,'sha':13,'pei':13,'haku':14,'hatu':14,'tyun':14}
+            index_x = {'ton':0,'nan':2,'sha':4,'pei':6,'haku':0,'hatu':2,'tyun':4}
+            size_x = 2
+            size_y = 1
+
+        tm_y = index_y[tile.tile_type]
+        if tile.tile_type in ['manzu','souzu','pinzu']:
+            if angle%180 == 0:
+                tm_x = tile.number-1
+            else:
+                tm_x = (tile.number-1)*2
+        else:
+            tm_x = index_x[tile.tile_type]
+        if angle == 180:
+            tm_x +=9
+        elif angle == 270:
+            tm_y += 5
+        pyxel.bltm(x,y,0,tm_x,tm_y,size_x,size_y,color)
+
 
     def draw_tile_only(self, x, y,tile,angle):
         if angle%180==0:
@@ -282,8 +324,11 @@ class App:
         elif angle == 270:
             tm_y += 5
 
-
+        if tile.akadora:
+            pyxel.pal(0,8)
+            pyxel.pal(3,8)
         pyxel.bltm(x,y,0,tm_x,tm_y,size_x,size_y)
+        pyxel.pal()
         self.draw_side_mini(x,y,angle)
 
     def draw_tile(self,x,y,tile,angle=0):
