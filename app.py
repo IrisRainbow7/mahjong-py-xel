@@ -1,5 +1,6 @@
 import pyxel
 import random
+import time
 from mahjongpy import MahjongTable, MahjongTile, MahjongPlayer
 
 
@@ -13,7 +14,7 @@ p1,p2,p3,p4 = table.players
  
 class App:
     def __init__(self):
-        pyxel.init(242,242, caption='Mahjong-py-xel', scale=2)
+        pyxel.init(242,242, caption='Mahjong-py-xel ver.0.1.0', scale=2)
         self.selected_tile_index = 15
         self.selected_tile_index_pre = 15
         pyxel.mouse(True)
@@ -30,6 +31,8 @@ class App:
         self.cancel = False
         self.screen = ""
         self.prev_player = None
+        self.cpu_wait = True
+        self.waiting = False
  
         pyxel.run(self.update, self.draw)
 
@@ -46,7 +49,7 @@ class App:
                     self.wait_btn = False
             self.selected_tile_index_pre = self.selected_tile_index
             for i in range(23):
-                if (pyxel.mouse_y > 222) and (((11*i)-1) < pyxel.mouse_x <= ((11*(i+1))-1)):
+                if (pyxel.mouse_y > 212) and (((11*i)-1) < pyxel.mouse_x <= ((11*(i+1))-1)):
                     self.selected_tile_index = i-3
                     if self.selected_tile_index_pre == self.selected_tile_index:
                         click = True
@@ -88,7 +91,7 @@ class App:
         if p1.is_hora():
             self.wait_tumo = True
             self.wait_btn = True
-        if p1.is_menzen() and  p1.is_tenpai() and (not p1.is_riichi):
+        if p1.is_menzen() and  p1.is_tenpai() and (not p1.is_riichi) and (not self.wait_btn):
             self.wait_riichi = True
             self.wait_btn = True
         if self.ok:
@@ -236,15 +239,7 @@ class App:
         melds = p1.melds[:]
         minkans = p1.minkans[:]
         if p1.turn != 0 and p1.latest_tile.tile_type is not None and p1.latest_tile in tiles:
-            try:
-                tiles.remove(p1.latest_tile)
-            except ValueError:
-                print('ValueError')
-                for i in p1.hands:
-                    print(i.display)
-                print('*')
-                print(p1.latest_tile.display)
-                pyxel.quit()
+            tiles.remove(p1.latest_tile)
             tiles.append(p1.latest_tile)
         for i,t in enumerate(tiles):
            if i == self.selected_tile_index:
