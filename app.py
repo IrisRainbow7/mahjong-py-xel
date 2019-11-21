@@ -150,6 +150,11 @@ class App:
             for i,y in enumerate(p1.yakus()):
                 pyxel.text(100,100+i*10,y,0)
             self.draw_hands()
+            for i,t in enumerate(table.dora_showing_tiles):
+                self.draw_tile_only(10+i*10,10,t,0)
+#            if p1.is_riichi:
+#                for i,t in enumerate(table.uradora_showing_tiles):
+#                    self.draw_tile_only(10+i*10,28,t,0)
         elif self.screen == 'test':
             pass
         else :
