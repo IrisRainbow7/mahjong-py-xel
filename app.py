@@ -1,20 +1,21 @@
 import pyxel
 import random
-import time
 from mahjongpy import MahjongTable, MahjongTile, MahjongPlayer
 
 
-table = MahjongTable()
+table = MahjongTable(kandora_sokumekuri=True)
 p1,p2,p3,p4 = table.players
 #p1.hands = MahjongTile.make_hands_set('129','19','19','1234','123') #和了テスト(国士無双13面待ち)
 #p1.hands = MahjongTile.make_hands_set('1122','5566','3388','34') #ポンテスト
 #p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #チーテスト
 #p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #リーチテスト
+#p1.hands = MahjongTile.make_hands_set('279','456','444469','','12') #暗槓テスト
+p1.hands = MahjongTile.make_hands_set('222','444','777469','','12') #暗槓テスト
 
  
 class App:
     def __init__(self):
-        pyxel.init(242,242, caption='Mahjong-py-xel ver.0.1.0', scale=2)
+        pyxel.init(242,256, caption='Mahjong-py-xel ver.0.1.0', scale=2)
         self.selected_tile_index = 15
         self.selected_tile_index_pre = 15
         pyxel.mouse(True)
@@ -25,12 +26,16 @@ class App:
         self.wait_pon = False
         self.wait_chi = False
         self.wait_riichi = False
-        self.wait_minkan = False
+        self.wait_daiminkan = False
         self.wait_ankan = False
+        self.wait_kakan = False
         self.ok = False
         self.cancel = False
         self.screen = ""
         self.prev_player = None
+        self.riichi_this_turn = False
+        self.kan_count = 0
+        self.ankan_count = 0
         self.cpu_wait = True
         self.waiting = False
  
@@ -38,6 +43,7 @@ class App:
 
 
     def update(self):
+        if self.screen in ['score','ryukyoku']: return()
         click = False
         if pyxel.btnp(pyxel.MOUSE_LEFT_BUTTON):
             if self.wait_btn:
@@ -64,19 +70,34 @@ class App:
                     print(p1.latest_tile.display)
                 tiles.append(p1.latest_tile)
             p1.discard(tiles[self.selected_tile_index])
+            if table.tiles_left() < 0:
+                self.screen = 'ryukyoku'
+                return()
             self.selected_tile_index = 15
             for i in table.players[1:]:
                 table.draw(i)
                 discard_tile = i.hands[random.randrange(14)]
                 self.prev_player = i
                 i.discard(discard_tile)
+                if table.tiles_left() < 0:
+                    self.screen = 'ryukyoku'
+                    return()
                 if p1.can_ron(discard_tile):
                     self.wait_ron = True
                     self.wait_btn = True
                     break
                 elif p1.can_minkan(discard_tile) and (not p1.is_riichi):
-                    self.wait_minkan = True
+                    self.wait_daiminkan = True
                     self.wait_btn = True
+                    break
+                elif p1.can_ankan() and (not p1.is_riichi):
+                    self.wait_ankan = True
+                    self.wait_btn = True
+                    break
+                elif p1.can_kakan() and (not p1.is_riichi):
+                    self.wait_kakan = True
+                    self.wait_btn = True
+                    break
                 elif p1.can_pon(discard_tile) and (not p1.is_riichi):
                     self.wait_pon = True
                     self.wait_btn = True
@@ -87,29 +108,45 @@ class App:
                     break
             else:
                 print('draw')
+                self.riichi_this_turn = False
                 table.draw(p1)
         if p1.is_hora():
             self.wait_tumo = True
             self.wait_btn = True
-        if p1.is_menzen() and  p1.is_tenpai() and (not p1.is_riichi) and (not self.wait_btn):
+        if p1.is_menzen() and  p1.is_tenpai() and (not p1.is_riichi) and (not self.wait_btn) and (not self.riichi_this_turn):
             self.wait_riichi = True
+            self.riichi_this_turn = True
             self.wait_btn = True
         if self.ok:
             if self.wait_tumo:
+                if len(p1.yakus())==0:
+                    pyxel.text(175,200,'yakunashi',0)
+                    return()
                 p1.tumo()
+                self.selected_tile_index = 15
                 self.screen = "score"
                 print(p1.score_fu())
                 print(p1.score_han())
                 self.wait_tumo = False
             if self.wait_ron:
+                if len(p1.yakus())==0:
+                    pyxel.text(175,200,'yakunashi',0)
+                    return()
+                self.selected_tile_index = 15
                 self.screen = "score"
                 print(p1.score_fu())
                 print(p1.score_han())
                 p1.ron(self.prev_player.discards[-1])
                 self.wait_ron = False
-            if self.wait_minkan:
+            if self.wait_daiminkan:
                 p1.kan(self.prev_player.discards[-1])
-                self.wait_minkan = False
+                self.wait_daiminkan = False
+            if self.wait_ankan:
+                p1.kan([i for i in p1.hands if p1.hands.count(i)==4][0])
+                self.wait_ankan = False
+            if self.wait_kakan:
+                p1.kakan(self.prev_player.discards[-1])
+                self.wait_kakan = False
             if self.wait_pon:
                 p1.pon(self.prev_player.discards[-1])
                 self.wait_pon = False
@@ -134,6 +171,10 @@ class App:
                         discard_tile = i.hands[random.randrange(14)]
                         self.prev_player = i
                         i.discard(discard_tile)
+                        if table.tiles_left() < 0:
+                            self.screen = 'ryukyoku'
+                            return()
+                self.riichi_this_turn = False
                 table.draw(p1)
             if self.wait_riichi:
                 self.wait_btn = False
@@ -154,22 +195,27 @@ class App:
                 pyxel.text(100,100+i*10,y,0)
             self.draw_hands()
             for i,t in enumerate(table.dora_showing_tiles):
-                self.draw_tile_only(10+i*10,10,t,0)
+                self.draw_tile_only(10+i*11,10,t,0)
 #            if p1.is_riichi:
 #                for i,t in enumerate(table.uradora_showing_tiles):
 #                    self.draw_tile_only(10+i*10,28,t,0)
         elif self.screen == 'test':
             pass
+        elif self.screen == 'ryukyoku':
+            pyxel.cls(3)
+            pyxel.bltm(100,100,0,4,20,4,2,7)
         else :
             pyxel.cls(3)
+            pyxel.rect(0,243,242,14,5)
             pyxel.rectb(95,100,54,42,0)
+            pyxel.text(10,250,"nokori:"+str(table.tiles_left()),0)
             pyxel.text(50,50,str(p1.shanten()),0)
             pyxel.text(50,70,str(p1.turn),0)
             if p1.is_riichi:
                 pyxel.bltm(110,131,0,8,14,2,1,0)
             self.draw_hands()
             for i,t in enumerate(table.dora_showing_tiles):
-                self.draw_tile_only(10,10,t,0)
+                self.draw_tile_only(10+i*11,10,t,0)
             wind_x = [97, 132, 139, 95]
             wind_y = [125, 132, 101, 102]
             score_x = [108]
@@ -181,7 +227,7 @@ class App:
                 self.draw_discards(p, i*90)
             if self.wait_tumo:
                 self.draw_button('TUMO','PASS')
-            if self.wait_pon or self.wait_chi or self.wait_ron:
+            if self.wait_pon or self.wait_chi or self.wait_ron or self.wait_daiminkan or self.wait_ankan or self.wait_kakan:
                 index = table.players.index(self.prev_player)
                 if index == 2:
                     size_x = 1
@@ -199,7 +245,7 @@ class App:
 
             if self.wait_ron:
                 self.draw_button('RON','PASS')
-            if self.wait_minkan:
+            if self.wait_daiminkan or self.wait_ankan or self.wait_kakan:
                 self.draw_button('KAN','PASS')
             if self.wait_pon:
                 self.draw_button('PON','PASS')
@@ -248,29 +294,64 @@ class App:
                 self.draw_tile(33+i*11,225,t)
         for i,m in enumerate(melds):
             padding = 0
+            kan_padding = -1*self.ankan_count*15-len(p1.melds)*60
+            minkan_judge = False
+            from_tacha_tile = False
             for j,t in enumerate(m):
                 if m.count(t)==1: #chi
                     if j == 0:
-                        self.draw_tile(204-i*40+j*11,233,t,90)
+                        self.draw_tile(204-i*40+j*11+kan_padding,233,t,90)
                     else:
-                        self.draw_tile(210-i*40+j*11,225,t)
-                elif [(t in k) for k in p1.minkans]: #kan
-                    continue
-                else: #pon
+                        self.draw_tile(210-i*40+j*11+kan_padding,225,t)
+                elif any([(t in k) for k in p1.minkans]): #minkan
+                    minkan_judge = True
                     if t.from_tacha:
-                        self.draw_tile(204-i*40+j*11,233,t,90)
+                        self.draw_tile(230-i*40+j*11+kan_padding,233,t,90)
+                        from_tacha_tile = True
                         padding = 7
                     else:
-                        self.draw_tile(203-i*40+j*11+padding,225,t)
-        for i,m in enumerate(minkans):
+                        if j==2:
+                            self.draw_tile(229-i*40+j*11+padding+kan_padding,225,t)
+                            if from_tacha_tile:
+                                self.draw_tile(230-i*40+(j+1)*11+padding+kan_padding,225,t)
+                            else:
+                                self.draw_tile(230-i*40+(j+1)*11+kan_padding,233,t,90)
+                        else:
+                            self.draw_tile(229-i*40+j*11+padding+kan_padding,225,t)
+                elif any([(t in k) for k in p1.ankans]): #ankan
+                    self.ankan_count += 1
+                    if j == 0:
+                        self.draw_tile_back(199-i*40+j*11,225)
+                    elif j == 2:
+                        self.draw_tile(199-i*40+j*11,225,t)
+                        self.draw_tile_back(199-i*40+(j+1)*11,225)
+                    else:
+                        self.draw_tile(199-i*40+j*11,225,t)
+                else: #pon
+                    if t.from_tacha:
+                        self.draw_tile(204-i*40+j*11+kan_padding,233,t,90)
+                        padding = 7
+                    else:
+                        self.draw_tile(203-i*40+j*11+padding+kan_padding,225,t)
+            #if minkan_judge: self.kan_count +=1
+        
+        """
+        for i,m in enumerate(minkans): #minkan
             i += len(melds)
             padding = 0
             for j, t in enumerate(m):
                 if t.from_tacha:
-                    self.draw_tile(204-i*40+j*11,233,t,90)
+                    self.draw_tile(229-i*40+j*11,233,t,90)
                     padding = 7
                 else:
-                    self.draw_tile(203-i*40+j*11+padding,225,t)
+                    self.draw_tile(228-i*40+j*11+padding,225,t)
+        """
+        
+
+    def draw_tile_back(self,x,y):
+        pyxel.rect(x,y,8,16,9)
+        self.draw_side(x,y)
+
  
     def draw_tile_trans(self,x,y,tile,angle,color):
         if angle%180==0:
@@ -352,8 +433,4 @@ class App:
             pyxel.line(x-1,y-1,x+15,y-1,9)
  
         
-
-
-
-
 App()
