@@ -34,8 +34,7 @@ class App:
         self.screen = ""
         self.prev_player = None
         self.riichi_this_turn = False
-        self.kan_count = 0
-        self.ankan_count = 0
+        self.melds_padding = [0]
         self.cpu_wait = True
         self.waiting = False
  
@@ -292,48 +291,56 @@ class App:
                 self.draw_tile(33+i*11,215,t)
            else:
                 self.draw_tile(33+i*11,225,t)
+        melds_padding = []
+        tmp_padding = 0
+        kan_count = 0
+        minkan_judge = False
         for i,m in enumerate(melds):
             padding = 0
-            kan_padding = -1*self.ankan_count*15-len(p1.melds)*60
-            minkan_judge = False
             from_tacha_tile = False
+            melds_padding.append(tmp_padding)
+            if minkan_judge: kan_count += 1
             for j,t in enumerate(m):
                 if m.count(t)==1: #chi
+                    tmp_padding = 0
                     if j == 0:
-                        self.draw_tile(204-i*40+j*11+kan_padding,233,t,90)
+                        self.draw_tile(204-i*40+j*11+melds_padding[i],233,t,90)
                     else:
-                        self.draw_tile(210-i*40+j*11+kan_padding,225,t)
+                        self.draw_tile(210-i*40+j*11+melds_padding[i],225,t)
                 elif any([(t in k) for k in p1.minkans]): #minkan
                     minkan_judge = True
+                    tmp_padding = -13*(kan_count+1)
+                    minkan_judge = True
                     if t.from_tacha:
-                        self.draw_tile(230-i*40+j*11+kan_padding,233,t,90)
+                        self.draw_tile(190-i*40+j*11+melds_padding[i],233,t,90)
                         from_tacha_tile = True
                         padding = 7
                     else:
                         if j==2:
-                            self.draw_tile(229-i*40+j*11+padding+kan_padding,225,t)
+                            self.draw_tile(189-i*40+j*11+padding+melds_padding[i],225,t)
                             if from_tacha_tile:
-                                self.draw_tile(230-i*40+(j+1)*11+padding+kan_padding,225,t)
+                                self.draw_tile(189-i*40+(j+1)*11+padding+melds_padding[i],225,t)
                             else:
-                                self.draw_tile(230-i*40+(j+1)*11+kan_padding,233,t,90)
+                                self.draw_tile(190-i*40+(j+1)*11+melds_padding[i],233,t,90)
                         else:
-                            self.draw_tile(229-i*40+j*11+padding+kan_padding,225,t)
+                            self.draw_tile(189-i*40+j*11+padding+melds_padding[i],225,t)
                 elif any([(t in k) for k in p1.ankans]): #ankan
+                    tmp_padding = -13
                     self.ankan_count += 1
                     if j == 0:
-                        self.draw_tile_back(199-i*40+j*11,225)
+                        self.draw_tile_back(199-i*40+j*11+melds_padding[i],225)
                     elif j == 2:
-                        self.draw_tile(199-i*40+j*11,225,t)
-                        self.draw_tile_back(199-i*40+(j+1)*11,225)
+                        self.draw_tile(199-i*40+j*11+melds_padding[i],225,t)
+                        self.draw_tile_back(199-i*40+(j+1)*11+melds_padding[i],225)
                     else:
-                        self.draw_tile(199-i*40+j*11,225,t)
+                        self.draw_tile(199-i*40+j*11+melds_padding[i],225,t)
                 else: #pon
+                    tmp_padding = 0
                     if t.from_tacha:
-                        self.draw_tile(204-i*40+j*11+kan_padding,233,t,90)
+                        self.draw_tile(204-i*40+j*11+melds_padding[i],233,t,90)
                         padding = 7
                     else:
-                        self.draw_tile(203-i*40+j*11+padding+kan_padding,225,t)
-            #if minkan_judge: self.kan_count +=1
+                        self.draw_tile(203-i*40+j*11+padding+melds_padding[i],225,t)
         
         """
         for i,m in enumerate(minkans): #minkan
