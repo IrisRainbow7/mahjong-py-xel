@@ -3,23 +3,20 @@ import random
 from mahjongpy import MahjongTable, MahjongTile, MahjongPlayer
 
 
-table = MahjongTable(kandora_sokumekuri=True)
-p1,p2,p3,p4 = table.players
-#p1.hands = MahjongTile.make_hands_set('129','19','19','1234','123') #和了テスト(国士無双13面待ち)
-#p1.hands = MahjongTile.make_hands_set('1122','5566','3388','34') #ポンテスト
-#p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #チーテスト
-#p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #リーチテスト
-#p1.hands = MahjongTile.make_hands_set('279','456','444469','','12') #暗槓テスト
-p1.hands = MahjongTile.make_hands_set('222','444','777469','','12') #暗槓テスト
-
  
 class App:
     def __init__(self):
         pyxel.init(242,256, caption='Mahjong-py-xel ver.0.1.0', scale=2)
-        self.selected_tile_index = 15
-        self.selected_tile_index_pre = 15
         pyxel.mouse(True)
         pyxel.load('Mahjongpai.pyxres')
+        self.table = MahjongTable(kandora_sokumekuri=True)
+        self.p1,self.p2,self.p3,self.p4 = self.table.players
+        self.init_var()
+        pyxel.run(self.update, self.draw)
+
+    def init_var(self):
+        self.selected_tile_index = 15
+        self.selected_tile_index_pre = 15
         self.wait_btn = False
         self.wait_tumo = False
         self.wait_ron = False
@@ -37,14 +34,26 @@ class App:
         self.melds_padding = [0]
         self.cpu_wait = True
         self.waiting = False
- 
-        pyxel.run(self.update, self.draw)
+        self.tenpai_count = 0
 
+        #self.p1.hands = MahjongTile.make_hands_set('129','19','19','1234','123') #和了テスト(国士無双13面待ち)
+        #self.p1.hands = MahjongTile.make_hands_set('1122','5566','3388','34') #ポンテスト
+        #self.p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #チーテスト
+        #self.p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #リーチテスト
+        #self.p1.hands = MahjongTile.make_hands_set('279','456','444469','','12') #暗槓テスト
+        #self.p1.hands = MahjongTile.make_hands_set('222','444','777469','','12') #明槓テスト
+
+ 
 
     def update(self):
-        if self.screen in ['score','ryukyoku']: return()
         click = False
         if pyxel.btnp(pyxel.MOUSE_LEFT_BUTTON):
+            if self.screen=='ryukyoku':
+                self.table = self.table.next_round()
+                self.p1,self.p2,self.p3,self.p4 = self.table.players
+                self.init_var()
+                return()
+
             if self.wait_btn:
                 if pyxel.mouse_x in range(175,196) and pyxel.mouse_y in range(210,219):
                     self.ok = True
@@ -58,123 +67,134 @@ class App:
                     self.selected_tile_index = i-3
                     if self.selected_tile_index_pre == self.selected_tile_index:
                         click = True
-        if click and self.selected_tile_index in range(len(p1.hands)) and (not self.wait_btn):
-            tiles = p1.hands[:]
-            if p1.turn != 0 and p1.latest_tile.tile_type is not None:
+        if self.screen in ['score','ryukyoku']: return()
+        if click and self.selected_tile_index in range(len(self.p1.hands)) and (not self.wait_btn):
+            tiles = self.p1.hands[:]
+            if self.p1.turn != 0 and self.p1.latest_tile.tile_type is not None:
                 try:
-                    tiles.remove(p1.latest_tile)
+                    tiles.remove(self.p1.latest_tile)
                 except ValueError:
-                    p1.hands_display()
+                    self.p1.hands_display()
                     print('+')
-                    print(p1.latest_tile.display)
-                tiles.append(p1.latest_tile)
-            p1.discard(tiles[self.selected_tile_index])
-            if table.tiles_left() < 0:
+                    print(self.p1.latest_tile.display)
+                tiles.append(self.p1.latest_tile)
+            self.p1.discard(tiles[self.selected_tile_index])
+            if self.table.tiles_left() < 0:
                 self.screen = 'ryukyoku'
+                self.table.is_ryukyoku = True
+                self.tenpai_count = len([i for i in self.table.players if i.is_tenpai()])
                 return()
             self.selected_tile_index = 15
-            for i in table.players[1:]:
-                table.draw(i)
+            for i in self.table.players[1:]:
+                self.table.draw(i)
                 discard_tile = i.hands[random.randrange(14)]
                 self.prev_player = i
                 i.discard(discard_tile)
-                if table.tiles_left() < 0:
+                if self.table.tiles_left() < 0:
                     self.screen = 'ryukyoku'
+                    self.table.is_ryukyoku = True
+                    self.tenpai_count = len([i for i in self.table.players if i.is_tenpai()])
                     return()
-                if p1.can_ron(discard_tile):
+                if self.p1.can_ron(discard_tile):
                     self.wait_ron = True
                     self.wait_btn = True
                     break
-                elif p1.can_minkan(discard_tile) and (not p1.is_riichi):
+                elif self.p1.can_minkan(discard_tile) and (not self.p1.is_riichi):
                     self.wait_daiminkan = True
                     self.wait_btn = True
                     break
-                elif p1.can_ankan() and (not p1.is_riichi):
+                elif self.p1.can_ankan() and (not self.p1.is_riichi):
                     self.wait_ankan = True
                     self.wait_btn = True
                     break
-                elif p1.can_kakan() and (not p1.is_riichi):
+                elif self.p1.can_kakan() and (not self.p1.is_riichi):
                     self.wait_kakan = True
                     self.wait_btn = True
                     break
-                elif p1.can_pon(discard_tile) and (not p1.is_riichi):
+                elif self.p1.can_pon(discard_tile) and (not self.p1.is_riichi):
                     self.wait_pon = True
                     self.wait_btn = True
                     break
-                elif i==p4 and p1.can_chi(discard_tile) and (not p1.is_riichi):
+                elif i==self.p4 and self.p1.can_chi(discard_tile) and (not self.p1.is_riichi):
                     self.wait_chi = True
                     self.wait_btn = True
                     break
             else:
                 print('draw')
                 self.riichi_this_turn = False
-                table.draw(p1)
-        if p1.is_hora():
+                self.table.draw(self.p1)
+        if self.p1.is_hora():
             self.wait_tumo = True
             self.wait_btn = True
-        if p1.is_menzen() and  p1.is_tenpai() and (not p1.is_riichi) and (not self.wait_btn) and (not self.riichi_this_turn):
+        if self.p1.is_menzen() and  self.p1.is_tenpai() and (not self.p1.is_riichi) and (not self.wait_btn) and (not self.riichi_this_turn):
             self.wait_riichi = True
             self.riichi_this_turn = True
             self.wait_btn = True
         if self.ok:
             if self.wait_tumo:
-                if len(p1.yakus())==0:
+                if len(self.p1.yakus())==0:
                     pyxel.text(175,200,'yakunashi',0)
                     return()
-                p1.tumo()
+                self.p1.tumo()
                 self.selected_tile_index = 15
                 self.screen = "score"
-                print(p1.score_fu())
-                print(p1.score_han())
+                print(self.p1.score_fu())
+                print(self.p1.score_han())
                 self.wait_tumo = False
             if self.wait_ron:
-                if len(p1.yakus())==0:
+                if len(self.p1.yakus())==0:
+                    print('yakunashi')
                     pyxel.text(175,200,'yakunashi',0)
                     return()
                 self.selected_tile_index = 15
                 self.screen = "score"
-                print(p1.score_fu())
-                print(p1.score_han())
-                p1.ron(self.prev_player.discards[-1])
+                print(self.p1.score_fu())
+                print(self.p1.score_han())
+                self.p1.ron(self.prev_player.discards[-1])
                 self.wait_ron = False
             if self.wait_daiminkan:
-                p1.kan(self.prev_player.discards[-1])
+                self.p1.kan(self.prev_player.discards[-1])
                 self.wait_daiminkan = False
             if self.wait_ankan:
-                p1.kan([i for i in p1.hands if p1.hands.count(i)==4][0])
+                self.p1.kan([i for i in self.p1.hands if self.p1.hands.count(i)==4][0])
                 self.wait_ankan = False
             if self.wait_kakan:
-                p1.kakan(self.prev_player.discards[-1])
+                self.p1.kakan(self.prev_player.discards[-1])
                 self.wait_kakan = False
             if self.wait_pon:
-                p1.pon(self.prev_player.discards[-1])
+                self.p1.pon(self.prev_player.discards[-1])
                 self.wait_pon = False
             if self.wait_chi:
                 print('chi')
-                p1.chi(self.prev_player.discards[-1])
+                self.p1.chi(self.prev_player.discards[-1])
                 self.wait_chi = False
             if self.wait_riichi:
-                p1.riichi()
+                self.p1.riichi()
                 self.wait_riichi = False
             self.wait_btn = False
             self.ok = False
         if self.cancel:
-            if self.wait_pon or self.wait_chi:
+            if self.wait_pon or self.wait_chi or self.wait_ron or self.wait_daiminkan or self.wait_kakan:
                 self.wait_btn = False
                 self.wait_pon = False
                 self.wait_chi = False
+                self.wait_ron = False
+                self.wait_daiminkan = False
+                self.wait_kakan = False
                 self.cancel = False
-                if self.prev_player != p4:
-                    for i in table.players[table.players.index(self.prev_player.next_player()):]:
-                        table.draw(i)
+                if self.prev_player != self.p4:
+                    for i in self.table.players[self.table.players.index(self.prev_player.next_player()):]:
+                        self.table.draw(i)
                         discard_tile = i.hands[random.randrange(14)]
                         self.prev_player = i
                         i.discard(discard_tile)
-                        if table.tiles_left() < 0:
+                        if self.table.tiles_left() < 0:
                             self.screen = 'ryukyoku'
+                            self.table.is_ryukyoku = True
+                            self.tenpai_count = len([i for i in self.table.players if i.is_tenpai()])
                             return()
                 self.riichi_this_turn = False
-                table.draw(p1)
+                self.table.draw(self.p1)
             if self.wait_riichi:
                 self.wait_btn = False
                 self.cancel = False
@@ -184,50 +204,54 @@ class App:
     def draw(self):
         if self.screen == 'score':
             pyxel.cls(3)
-            pyxel.text(70,50,str(p1.score_fu())+' FU',0)
-            pyxel.text(70,60,str(p1.score_han())+' HAN',0)
-            pyxel.text(70,70,str(p1.score())+' Points',0)
-            pyxel.text(70,80,'Dora: '+str(p1.displayed_doras()),0)
-            pyxel.text(70,90,'AkaDora: '+str(p1.akadoras()),0)
+            pyxel.text(70,50,str(self.p1.score_fu())+' FU',0)
+            pyxel.text(70,60,str(self.p1.score_han())+' HAN',0)
+            pyxel.text(70,70,str(self.p1.score())+' Points',0)
+            pyxel.text(70,80,'Dora: '+str(self.p1.displayed_doras()),0)
+            pyxel.text(70,90,'AkaDora: '+str(self.p1.akadoras()),0)
             pyxel.text(70,100,'YAKU:',0)
-            for i,y in enumerate(p1.yakus()):
+            for i,y in enumerate(self.p1.yakus()):
                 pyxel.text(100,100+i*10,y,0)
             self.draw_hands()
-            for i,t in enumerate(table.dora_showing_tiles):
+            for i,t in enumerate(self.table.dora_showing_tiles):
                 self.draw_tile_only(10+i*11,10,t,0)
-#            if p1.is_riichi:
-#                for i,t in enumerate(table.uradora_showing_tiles):
-#                    self.draw_tile_only(10+i*10,28,t,0)
+            if self.p1.is_riichi:
+                for i,t in enumerate(self.table.uradora_showing_tiles):
+                    self.draw_tile_only(10+i*10,28,t,0)
         elif self.screen == 'test':
             pass
         elif self.screen == 'ryukyoku':
             pyxel.cls(3)
-            pyxel.bltm(100,100,0,4,20,4,2,7)
+            pyxel.bltm(100,50,0,4,20,4,2,7)
+            pyxel.bltm(70,80,0,self.tenpai_count*2,22,2,2,7)
+            pyxel.bltm(90,80,0,8,20,10,2,7)
         else :
             pyxel.cls(3)
             pyxel.rect(0,243,242,14,5)
             pyxel.rectb(95,100,54,42,0)
-            pyxel.text(10,250,"nokori:"+str(table.tiles_left()),0)
-            pyxel.text(50,50,str(p1.shanten()),0)
-            pyxel.text(50,70,str(p1.turn),0)
-            if p1.is_riichi:
+            pyxel.text(10,250,"nokori:"+str(self.table.tiles_left()),0)
+            pyxel.text(55,250,self.table.wind+str(self.table.kyoku)+'kyoku',0)
+            pyxel.text(100,250,str(self.table.honba)+'honba',0)
+            pyxel.text(50,50,str(self.p1.shanten()),0)
+            pyxel.text(50,70,str(self.p1.turn),0)
+            if self.p1.is_riichi:
                 pyxel.bltm(110,131,0,8,14,2,1,0)
             self.draw_hands()
-            for i,t in enumerate(table.dora_showing_tiles):
+            for i,t in enumerate(self.table.dora_showing_tiles):
                 self.draw_tile_only(10+i*11,10,t,0)
             wind_x = [97, 132, 139, 95]
             wind_y = [125, 132, 101, 102]
             score_x = [108]
             score_y = [135]
-            pyxel.text(score_x[0],score_y[0],str(p1.points),0)
-            for i,p in enumerate(table.players):
+            pyxel.text(score_x[0],score_y[0],str(self.p1.points),0)
+            for i,p in enumerate(self.table.players):
                 self.draw_tile_trans(wind_x[i],wind_y[i],MahjongTile(p.wind),i*90,7)
                 #pyxel.text(score_x[i],score_y[i],str(p.points),0)
                 self.draw_discards(p, i*90)
             if self.wait_tumo:
                 self.draw_button('TUMO','PASS')
             if self.wait_pon or self.wait_chi or self.wait_ron or self.wait_daiminkan or self.wait_ankan or self.wait_kakan:
-                index = table.players.index(self.prev_player)
+                index = self.table.players.index(self.prev_player)
                 if index == 2:
                     size_x = 1
                     size_y = 2
@@ -280,12 +304,12 @@ class App:
 
 
     def draw_hands(self):
-        tiles = p1.hands[:]
-        melds = p1.melds[:]
-        minkans = p1.minkans[:]
-        if p1.turn != 0 and p1.latest_tile.tile_type is not None and p1.latest_tile in tiles:
-            tiles.remove(p1.latest_tile)
-            tiles.append(p1.latest_tile)
+        tiles = self.p1.hands[:]
+        melds = self.p1.melds[:]
+        minkans = self.p1.minkans[:]
+        if self.p1.turn != 0 and self.p1.latest_tile.tile_type is not None and self.p1.latest_tile in tiles:
+            tiles.remove(self.p1.latest_tile)
+            tiles.append(self.p1.latest_tile)
         for i,t in enumerate(tiles):
            if i == self.selected_tile_index:
                 self.draw_tile(33+i*11,215,t)
@@ -307,7 +331,7 @@ class App:
                         self.draw_tile(204-i*40+j*11+melds_padding[i],233,t,90)
                     else:
                         self.draw_tile(210-i*40+j*11+melds_padding[i],225,t)
-                elif any([(t in k) for k in p1.minkans]): #minkan
+                elif any([(t in k) for k in self.p1.minkans]): #minkan
                     minkan_judge = True
                     tmp_padding = -13*(kan_count+1)
                     minkan_judge = True
@@ -324,7 +348,7 @@ class App:
                                 self.draw_tile(190-i*40+(j+1)*11+melds_padding[i],233,t,90)
                         else:
                             self.draw_tile(189-i*40+j*11+padding+melds_padding[i],225,t)
-                elif any([(t in k) for k in p1.ankans]): #ankan
+                elif any([(t in k) for k in self.p1.ankans]): #ankan
                     tmp_padding = -13
                     self.ankan_count += 1
                     if j == 0:
