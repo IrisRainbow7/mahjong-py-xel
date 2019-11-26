@@ -81,7 +81,7 @@ class App:
             self.p1.discard(tiles[self.selected_tile_index])
             if self.table.tiles_left() < 0:
                 self.screen = 'ryukyoku'
-                self.table.is_ryukyoku = True
+                self.table.ryukyoku()
                 self.tenpai_count = len([i for i in self.table.players if i.is_tenpai()])
                 return()
             self.selected_tile_index = 15
@@ -92,7 +92,7 @@ class App:
                 i.discard(discard_tile)
                 if self.table.tiles_left() < 0:
                     self.screen = 'ryukyoku'
-                    self.table.is_ryukyoku = True
+                    self.table.ryukyoku()
                     self.tenpai_count = len([i for i in self.table.players if i.is_tenpai()])
                     return()
                 if self.p1.can_ron(discard_tile):
@@ -190,7 +190,7 @@ class App:
                         i.discard(discard_tile)
                         if self.table.tiles_left() < 0:
                             self.screen = 'ryukyoku'
-                            self.table.is_ryukyoku = True
+                            self.table.ryukyoku()
                             self.tenpai_count = len([i for i in self.table.players if i.is_tenpai()])
                             return()
                 self.riichi_this_turn = False
