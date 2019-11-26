@@ -11,6 +11,8 @@ class App:
         pyxel.load('Mahjongpai.pyxres')
         self.table = MahjongTable(kandora_sokumekuri=True)
         self.p1,self.p2,self.p3,self.p4 = self.table.players
+#        for i in range(68):
+#            self.table.tiles.pop(0)
         self.init_var()
         pyxel.run(self.update, self.draw)
 
@@ -36,7 +38,7 @@ class App:
         self.waiting = False
         self.tenpai_count = 0
 
-        #self.p1.hands = MahjongTile.make_hands_set('129','19','19','1234','123') #和了テスト(国士無双13面待ち)
+#        self.p1.hands = MahjongTile.make_hands_set('129','19','19','1234','123') #和了テスト(国士無双13面待ち)
         #self.p1.hands = MahjongTile.make_hands_set('1122','5566','3388','34') #ポンテスト
         #self.p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #チーテスト
         #self.p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #リーチテスト
@@ -204,27 +206,38 @@ class App:
     def draw(self):
         if self.screen == 'score':
             pyxel.cls(3)
-            pyxel.text(70,50,str(self.p1.score_fu())+' FU',0)
-            pyxel.text(70,60,str(self.p1.score_han())+' HAN',0)
-            pyxel.text(70,70,str(self.p1.score())+' Points',0)
-            pyxel.text(70,80,'Dora: '+str(self.p1.displayed_doras()),0)
-            pyxel.text(70,90,'AkaDora: '+str(self.p1.akadoras()),0)
-            pyxel.text(70,100,'YAKU:',0)
+            if self.p1.score_han() < 13:
+                pyxel.text(70,70,str(self.p1.score_fu())+' FU',0)
+                pyxel.text(70,80,str(self.p1.score_han())+' HAN',0)
+            else:
+                if self.p1.is_mangan: in_x=0;si_x=4
+                if self.p1.is_haneman: in_x=2;si_x=4
+                if self.p1.is_baiman: in_x=4;si_x=4
+                if self.p1.is_sanbaiman: in_x=6;si_x=6
+                if self.p1.is_kazoeyakuman: in_x=9;si_x=8
+                if self.p1.yakuman_count()>0: in_x =11;si_x=4
+                pyxel.bltm(70,70,0,in_x*2,24,si_x,2,7)
+            pyxel.text(70,90,str(self.p1.score())+' Points',0)
+            pyxel.text(70,100,'Dora: '+str(self.p1.displayed_doras()),0)
+            pyxel.text(70,110,'AkaDora: '+str(self.p1.akadoras()),0)
+            pyxel.text(70,120,'YAKU:',0)
             for i,y in enumerate(self.p1.yakus()):
-                pyxel.text(100,100+i*10,y,0)
+                pyxel.text(100,120+i*10,y,0)
             self.draw_hands()
             for i,t in enumerate(self.table.dora_showing_tiles):
                 self.draw_tile_only(10+i*11,10,t,0)
             if self.p1.is_riichi:
                 for i,t in enumerate(self.table.uradora_showing_tiles):
                     self.draw_tile_only(10+i*10,28,t,0)
+            self.draw_players_score()
         elif self.screen == 'test':
             pass
         elif self.screen == 'ryukyoku':
             pyxel.cls(3)
-            pyxel.bltm(100,50,0,4,20,4,2,7)
-            pyxel.bltm(70,80,0,self.tenpai_count*2,22,2,2,7)
-            pyxel.bltm(90,80,0,8,20,10,2,7)
+            pyxel.bltm(100,110,0,4,20,4,2,7)
+            pyxel.bltm(70,140,0,self.tenpai_count*2,22,2,2,7)
+            pyxel.bltm(90,140,0,8,20,10,2,7)
+            self.draw_players_score()
         else :
             pyxel.cls(3)
             pyxel.rect(0,243,242,14,5)
@@ -276,6 +289,36 @@ class App:
                 self.draw_button('CHI','PASS')
             if self.wait_riichi:
                 self.draw_button('RICHI','PASS')
+
+    def draw_players_score(self):
+        score_diff = []
+        if self.table.is_ryukyoku:
+            if self.tenpai_count in [0,4]:
+                score = {True:'(+0)', False:'(+0)'}
+            else:
+                score = {True:'(+'+str(int(3000/self.tenpai_count))+')', False:'(-'+str(int(3000/(4-self.tenpai_count)))+')'}
+            for i in self.table.players:
+                score_diff.append(score[i.is_tenpai()])
+        else:
+            score_diff = ['(+0)']*4
+            payed_score = self.table.win_player.payed_score()
+            if self.table.win_player.is_ron:
+                score_diff[self.table.players.index(self.table.win_player)]='(+'+str(self.table.win_player.score())+')'
+                score_diff[self.table.players.index(self.table.furikomi_player)]='(-'+str(payed_score[0])+')'
+            elif self.table.win_player.is_tumo:
+                for i in self.table.players:
+                    if i==self.table.win_player:
+                        score_diff[self.table.players.index(i)]='(+'+str(i.score())+')'
+                    elif i.oya:
+                        score_diff[self.table.players.index(i)]='(-'+str(payed_score[1])+')'
+                    else:
+                        score_diff[self.table.players.index(i)]='(-'+str(payed_score[2])+')'
+
+        score_x = [110,210,110,10]
+        score_y = [190,130,30,130]
+        for i,p in enumerate(self.table.players):
+            pyxel.text(score_x[i]-(len(str(p.points))-6)*3,score_y[i],str(p.points),0)
+            pyxel.text(score_x[i]+8+12-len(score_diff[i])*3,score_y[i]+10,score_diff[i],0)
 
 
     def draw_button(self, msg1, msg2):
