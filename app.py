@@ -1,7 +1,7 @@
 import pyxel
 import random
 from mahjongpy import MahjongTable, MahjongTile, MahjongPlayer
-
+from datetime import datetime,timedelta
 
  
 class App:
@@ -38,7 +38,7 @@ class App:
         self.waiting = False
         self.tenpai_count = 0
 
-#        self.p1.hands = MahjongTile.make_hands_set('129','19','19','1234','123') #和了テスト(国士無双13面待ち)
+        #self.p1.hands = MahjongTile.make_hands_set('129','19','19','1234','123') #和了テスト(国士無双13面待ち)
         #self.p1.hands = MahjongTile.make_hands_set('1122','5566','3388','34') #ポンテスト
         #self.p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #チーテスト
         #self.p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #リーチテスト
@@ -50,7 +50,7 @@ class App:
     def update(self):
         click = False
         if pyxel.btnp(pyxel.MOUSE_LEFT_BUTTON):
-            if self.screen=='ryukyoku':
+            if self.screen in ['ryukyoku','score']:
                 self.table = self.table.next_round()
                 self.p1,self.p2,self.p3,self.p4 = self.table.players
                 self.init_var()
@@ -245,6 +245,13 @@ class App:
             pyxel.text(10,250,"nokori:"+str(self.table.tiles_left()),0)
             pyxel.text(55,250,self.table.wind+str(self.table.kyoku)+'kyoku',0)
             pyxel.text(100,250,str(self.table.honba)+'honba',0)
+
+            pyxel.bltm(150,244,0,10,22,1,2,7)
+            pyxel.bltm(159,244,0,15+self.table.kyoku,22,1,2,7)
+            pyxel.bltm(168,244,0,14,22,1,2,7)
+            pyxel.bltm(180,244,0,15+self.table.honba,22,1,2,7)
+            pyxel.bltm(189,244,0,20,22,2,2,7)
+
             pyxel.text(50,50,str(self.p1.shanten()),0)
             pyxel.text(50,70,str(self.p1.turn),0)
             if self.p1.is_riichi:
@@ -254,9 +261,10 @@ class App:
                 self.draw_tile_only(10+i*11,10,t,0)
             wind_x = [97, 132, 139, 95]
             wind_y = [125, 132, 101, 102]
-            score_x = [108]
-            score_y = [135]
-            pyxel.text(score_x[0],score_y[0],str(self.p1.points),0)
+            score_x = [108,127,118,98]
+            score_y = [135,125,102,112]
+            for i,p in enumerate(self.table.players):
+                pyxel.text(score_x[i],score_y[i],str(p.points),0)
             for i,p in enumerate(self.table.players):
                 self.draw_tile_trans(wind_x[i],wind_y[i],MahjongTile(p.wind),i*90,7)
                 #pyxel.text(score_x[i],score_y[i],str(p.points),0)
