@@ -1,9 +1,8 @@
 import pyxel
 import random
 from mahjongpy import MahjongTable, MahjongTile, MahjongPlayer
-from datetime import datetime,timedelta
 
- 
+
 class App:
     def __init__(self):
         pyxel.init(242,256, caption='Mahjong-py-xel ver.0.1.0', scale=2)
@@ -49,8 +48,6 @@ class App:
         #self.p1.hands = MahjongTile.make_hands_set('279','456','444469','','12') #暗槓テスト
         #self.p1.hands = MahjongTile.make_hands_set('222','444','777469','','12') #明槓テスト
 
- 
-
     def update(self):
         click = False
         if self.screen == 'finished': return()
@@ -58,7 +55,7 @@ class App:
             if self.screen in ['ryukyoku','score']:
                 self.table = self.table.next_round()
                 self.p1,self.p2,self.p3,self.p4 = self.table.players
-                if self.gamemode==1 and self.table.wind=='nan':
+                if self.gamemode == 1 and self.table.wind == 'nan':
                     self.screen = 'finished'
                     return()
                 if min([int(j.points) for j in self.table.players]) < 0:
@@ -128,7 +125,7 @@ class App:
                     self.wait_pon = True
                     self.wait_btn = True
                     break
-                elif i==self.p4 and self.p1.can_chi(discard_tile) and (not self.p1.is_riichi):
+                elif i == self.p4 and self.p1.can_chi(discard_tile) and (not self.p1.is_riichi):
                     self.wait_chi = True
                     self.wait_btn = True
                     break
@@ -139,13 +136,13 @@ class App:
         if self.p1.is_hora():
             self.wait_tumo = True
             self.wait_btn = True
-        if self.p1.is_menzen() and  self.p1.is_tenpai() and (not self.p1.is_riichi) and (not self.wait_btn) and (not self.riichi_this_turn):
+        if self.p1.is_menzen() and self.p1.is_tenpai() and (not self.p1.is_riichi) and (not self.wait_btn) and (not self.riichi_this_turn):
             self.wait_riichi = True
             self.riichi_this_turn = True
             self.wait_btn = True
         if self.ok:
             if self.wait_tumo:
-                if len(self.p1.yakus())==0:
+                if len(self.p1.yakus()) == 0:
                     self.yakunashi = True
                     self.wait_btn = True
                     self.ok = False
@@ -157,13 +154,13 @@ class App:
                 print(self.p1.score_han())
                 self.wait_tumo = False
             if self.wait_ron:
-                if len(self.p1.yakus())==0:
+                if len(self.p1.yakus()) == 0:
                     print('yakunashi')
                     self.yakunashi = True
                     self.wait_btn = True
                     self.ok = False
                     return()
-                if self.prev_player.discards[-1] in self.p1.discards:#赤ドラ未考慮
+                if self.prev_player.discards[-1] in self.p1.discards:  # 赤ドラ未考慮
                     self.furiten = True
                     self.wait_btn = True
                     self.ok = False
@@ -178,7 +175,7 @@ class App:
                 self.p1.kan(self.prev_player.discards[-1])
                 self.wait_daiminkan = False
             if self.wait_ankan:
-                self.p1.kan([i for i in self.p1.hands if self.p1.hands.count(i)==4][0])
+                self.p1.kan([i for i in self.p1.hands if self.p1.hands.count(i) == 4][0])
                 self.wait_ankan = False
             if self.wait_kakan:
                 self.p1.kakan(self.prev_player.discards[-1])
@@ -224,7 +221,6 @@ class App:
                 self.wait_btn = False
                 self.cancel = False
                 self.wait_riichi = False
-    
 
     def draw(self):
         if self.screen == 'score':
@@ -238,7 +234,7 @@ class App:
                 if self.p1.is_baiman: in_x=4;si_x=4
                 if self.p1.is_sanbaiman: in_x=6;si_x=6
                 if self.p1.is_kazoeyakuman: in_x=9;si_x=8
-                if self.p1.yakuman_count()>0: in_x =11;si_x=4
+                if self.p1.yakuman_count() > 0: in_x=11;si_x=4
                 pyxel.bltm(90,70,0,in_x*2,24,si_x,2,7)
             pyxel.text(90,90,str(self.p1.score())+' Points',0)
             pyxel.text(90,100,'Dora: '+str(self.p1.displayed_doras()),0)
@@ -275,7 +271,7 @@ class App:
             pyxel.bltm(70,140,0,self.tenpai_count*2,22,2,2,7)
             pyxel.bltm(90,140,0,8,20,10,2,7)
             self.draw_players_score()
-        else :
+        else:
             pyxel.cls(3)
             pyxel.rect(0,243,242,14,5)
             pyxel.rectb(95,100,54,42,0)
@@ -339,7 +335,6 @@ class App:
             if self.furiten:
                 pyxel.text(165,200,'furiten',0)
 
-
     def draw_players_score(self):
         score_diff = []
         if self.table.is_ryukyoku:
@@ -353,23 +348,22 @@ class App:
             score_diff = ['(+0)']*4
             payed_score = self.table.win_player.payed_score()
             if self.table.win_player.is_ron:
-                score_diff[self.table.players.index(self.table.win_player)]='(+'+str(self.table.win_player.score())+')'
-                score_diff[self.table.players.index(self.table.furikomi_player)]='(-'+str(payed_score[0])+')'
+                score_diff[self.table.players.index(self.table.win_player)] = '(+'+str(self.table.win_player.score())+')'
+                score_diff[self.table.players.index(self.table.furikomi_player)] = '(-'+str(payed_score[0])+')'
             elif self.table.win_player.is_tumo:
                 for i in self.table.players:
-                    if i==self.table.win_player:
-                        score_diff[self.table.players.index(i)]='(+'+str(i.score())+')'
+                    if i == self.table.win_player:
+                        score_diff[self.table.players.index(i)] = '(+'+str(i.score())+')'
                     elif i.oya:
-                        score_diff[self.table.players.index(i)]='(-'+str(payed_score[1])+')'
+                        score_diff[self.table.players.index(i)] = '(-'+str(payed_score[1])+')'
                     else:
-                        score_diff[self.table.players.index(i)]='(-'+str(payed_score[2])+')'
+                        score_diff[self.table.players.index(i)] = '(-'+str(payed_score[2])+')'
 
         score_x = [110,210,110,10]
         score_y = [190,130,30,130]
         for i,p in enumerate(self.table.players):
             pyxel.text(score_x[i]-(len(str(p.points))-6)*3,score_y[i],str(p.points),0)
             pyxel.text(score_x[i]+8+12-len(score_diff[i])*3,score_y[i]+10,score_diff[i],0)
-
 
     def draw_button(self, msg1, msg2):
         pyxel.rect(175,210,20,8,5)
@@ -393,9 +387,6 @@ class App:
             for i,t in enumerate(p.discards):
                 self.draw_tile_only(140-(i%6)*9, 83-(i//6)*17,t,angle)
 
-
-
-
     def draw_hands(self):
         tiles = self.p1.hands[:]
         melds = self.p1.melds[:]
@@ -404,9 +395,9 @@ class App:
             tiles.remove(self.p1.latest_tile)
             tiles.append(self.p1.latest_tile)
         for i,t in enumerate(tiles):
-           if i == self.selected_tile_index:
+            if i == self.selected_tile_index:
                 self.draw_tile(33+i*11,215,t)
-           else:
+            else:
                 self.draw_tile(33+i*11,225,t)
         melds_padding = []
         tmp_padding = 0
@@ -418,13 +409,13 @@ class App:
             melds_padding.append(tmp_padding)
             if minkan_judge: kan_count += 1
             for j,t in enumerate(m):
-                if m.count(t)==1: #chi
+                if m.count(t) == 1:  # chi
                     tmp_padding = 0
                     if j == 0:
                         self.draw_tile(204-i*40+j*11+melds_padding[i],233,t,90)
                     else:
                         self.draw_tile(210-i*40+j*11+melds_padding[i],225,t)
-                elif any([(t in k) for k in self.p1.minkans]): #minkan
+                elif any([(t in k) for k in self.p1.minkans]):  # minkan
                     minkan_judge = True
                     tmp_padding = -13*(kan_count+1)
                     minkan_judge = True
@@ -433,7 +424,7 @@ class App:
                         from_tacha_tile = True
                         padding = 7
                     else:
-                        if j==2:
+                        if j == 2:
                             self.draw_tile(189-i*40+j*11+padding+melds_padding[i],225,t)
                             if from_tacha_tile:
                                 self.draw_tile(189-i*40+(j+1)*11+padding+melds_padding[i],225,t)
@@ -441,7 +432,7 @@ class App:
                                 self.draw_tile(190-i*40+(j+1)*11+melds_padding[i],233,t,90)
                         else:
                             self.draw_tile(189-i*40+j*11+padding+melds_padding[i],225,t)
-                elif any([(t in k) for k in self.p1.ankans]): #ankan
+                elif any([(t in k) for k in self.p1.ankans]):  # ankan
                     tmp_padding = -13
                     self.ankan_count += 1
                     if j == 0:
@@ -451,17 +442,17 @@ class App:
                         self.draw_tile_back(199-i*40+(j+1)*11+melds_padding[i],225)
                     else:
                         self.draw_tile(199-i*40+j*11+melds_padding[i],225,t)
-                else: #pon
+                else:  # pon
                     tmp_padding = 0
                     if t.from_tacha:
                         self.draw_tile(204-i*40+j*11+melds_padding[i],233,t,90)
                         for k in self.kakan_tile:
-                            if t==k:
+                            if t == k:
                                 self.draw_tile(204-i*40+j*11+melds_padding[i],223,t,90)
                         padding = 7
                     else:
                         self.draw_tile(203-i*40+j*11+padding+melds_padding[i],225,t)
-        
+
         """
         for i,m in enumerate(minkans): #minkan
             i += len(melds)
@@ -473,15 +464,13 @@ class App:
                 else:
                     self.draw_tile(228-i*40+j*11+padding,225,t)
         """
-        
 
     def draw_tile_back(self,x,y):
         pyxel.rect(x,y,8,16,9)
         self.draw_side(x,y)
 
- 
     def draw_tile_trans(self,x,y,tile,angle,color):
-        if angle%180==0:
+        if angle % 180 == 0:
             index_y = {'manzu':0, 'souzu':2, 'pinzu':4,'ton':6,'nan':6,'sha':6,'pei':6,'haku':8,'hatu':8,'tyun':8}
             index_x = {'ton':0,'nan':1,'sha':2,'pei':3,'haku':0,'hatu':1,'tyun':2}
             size_x = 1
@@ -494,21 +483,20 @@ class App:
 
         tm_y = index_y[tile.tile_type]
         if tile.tile_type in ['manzu','souzu','pinzu']:
-            if angle%180 == 0:
+            if angle % 180 == 0:
                 tm_x = tile.number-1
             else:
                 tm_x = (tile.number-1)*2
         else:
             tm_x = index_x[tile.tile_type]
         if angle == 180:
-            tm_x +=9
+            tm_x += 9
         elif angle == 270:
             tm_y += 5
         pyxel.bltm(x,y,0,tm_x,tm_y,size_x,size_y,color)
 
-
     def draw_tile_only(self, x, y,tile,angle):
-        if angle%180==0:
+        if angle % 180 == 0:
             index_y = {'manzu':0, 'souzu':2, 'pinzu':4,'ton':6,'nan':6,'sha':6,'pei':6,'haku':8,'hatu':8,'tyun':8}
             index_x = {'ton':0,'nan':1,'sha':2,'pei':3,'haku':0,'hatu':1,'tyun':2}
             size_x = 1
@@ -518,17 +506,17 @@ class App:
             index_x = {'ton':0,'nan':2,'sha':4,'pei':6,'haku':0,'hatu':2,'tyun':4}
             size_x = 2
             size_y = 1
-        
+
         tm_y = index_y[tile.tile_type]
         if tile.tile_type in ['manzu','souzu','pinzu']:
-            if angle%180 == 0:
+            if angle % 180 == 0:
                 tm_x = tile.number-1
             else:
                 tm_x = (tile.number-1)*2
         else:
             tm_x = index_x[tile.tile_type]
         if angle == 180:
-            tm_x +=9
+            tm_x += 9
         elif angle == 270:
             tm_y += 5
 
@@ -544,7 +532,6 @@ class App:
         if angle == 0:
             self.draw_side(x,y)
 
-
     def draw_side(self,x,y):
         pyxel.line(x+1,y-1,x+7,y-1,9)
         pyxel.line(x+2,y-2,x+7,y-2,9)
@@ -552,12 +539,12 @@ class App:
         pyxel.line(x+9,y-2,x+9,y+13,9)
 
     def draw_side_mini(self,x,y,angle):
-        if angle %180 == 0:
+        if angle % 180 == 0:
             pyxel.line(x+1,y-1,x+7,y-1,9)
             pyxel.line(x+8,y-1,x+8,y+14,9)
         else:
             pyxel.line(x-1,y-1,x-1,y+6,9)
             pyxel.line(x-1,y-1,x+15,y-1,9)
- 
-        
+
+
 App()
