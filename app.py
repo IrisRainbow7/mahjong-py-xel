@@ -9,7 +9,7 @@ class App:
         pyxel.init(242,256, caption='Mahjong-py-xel ver.0.1.0', scale=2)
         pyxel.mouse(True)
         pyxel.load('Mahjongpai.pyxres')
-        self.table = MahjongTable(kandora_sokumekuri=True)
+        self.table = MahjongTable(oya_player=random.randrange(1,5),kandora_sokumekuri=True)
         self.p1,self.p2,self.p3,self.p4 = self.table.players
 #        for i in range(68):
 #            self.table.tiles.pop(0)
@@ -37,6 +37,9 @@ class App:
         self.cpu_wait = True
         self.waiting = False
         self.tenpai_count = 0
+        self.kakan_tile = []
+        self.yakunashi = False
+        self.furiten = False
 
         #self.p1.hands = MahjongTile.make_hands_set('129','19','19','1234','123') #和了テスト(国士無双13面待ち)
         #self.p1.hands = MahjongTile.make_hands_set('1122','5566','3388','34') #ポンテスト
@@ -135,7 +138,9 @@ class App:
         if self.ok:
             if self.wait_tumo:
                 if len(self.p1.yakus())==0:
-                    pyxel.text(175,200,'yakunashi',0)
+                    self.yakunashi = True
+                    self.wait_btn = True
+                    self.ok = False
                     return()
                 self.p1.tumo()
                 self.selected_tile_index = 15
@@ -146,7 +151,14 @@ class App:
             if self.wait_ron:
                 if len(self.p1.yakus())==0:
                     print('yakunashi')
-                    pyxel.text(175,200,'yakunashi',0)
+                    self.yakunashi = True
+                    self.wait_btn = True
+                    self.ok = False
+                    return()
+                if self.prev_player.discards[-1] in self.p1.discards:#赤ドラ未考慮
+                    self.furiten = True
+                    self.wait_btn = True
+                    self.ok = False
                     return()
                 self.selected_tile_index = 15
                 self.screen = "score"
@@ -162,6 +174,7 @@ class App:
                 self.wait_ankan = False
             if self.wait_kakan:
                 self.p1.kakan(self.prev_player.discards[-1])
+                self.kakan_tile.append(self.prev_player.discards[-1])
                 self.wait_kakan = False
             if self.wait_pon:
                 self.p1.pon(self.prev_player.discards[-1])
@@ -176,13 +189,15 @@ class App:
             self.wait_btn = False
             self.ok = False
         if self.cancel:
-            if self.wait_pon or self.wait_chi or self.wait_ron or self.wait_daiminkan or self.wait_kakan:
+            if self.wait_pon or self.wait_chi or self.wait_ron or self.wait_daiminkan:
                 self.wait_btn = False
                 self.wait_pon = False
                 self.wait_chi = False
                 self.wait_ron = False
                 self.wait_daiminkan = False
                 self.wait_kakan = False
+                self.yakunashi = False
+                self.furiten = False
                 self.cancel = False
                 if self.prev_player != self.p4:
                     for i in self.table.players[self.table.players.index(self.prev_player.next_player()):]:
@@ -197,7 +212,7 @@ class App:
                             return()
                 self.riichi_this_turn = False
                 self.table.draw(self.p1)
-            if self.wait_riichi:
+            if self.wait_riichi or self.wait_kakan or self.wait_tumo:
                 self.wait_btn = False
                 self.cancel = False
                 self.wait_riichi = False
@@ -297,6 +312,11 @@ class App:
                 self.draw_button('CHI','PASS')
             if self.wait_riichi:
                 self.draw_button('RICHI','PASS')
+            if self.yakunashi:
+                pyxel.text(165,200,'yakunashi',0)
+            if self.furiten:
+                pyxel.text(165,200,'furiten',0)
+
 
     def draw_players_score(self):
         score_diff = []
@@ -413,6 +433,9 @@ class App:
                     tmp_padding = 0
                     if t.from_tacha:
                         self.draw_tile(204-i*40+j*11+melds_padding[i],233,t,90)
+                        for k in self.kakan_tile:
+                            if t==k:
+                                self.draw_tile(204-i*40+j*11+melds_padding[i],223,t,90)
                         padding = 7
                     else:
                         self.draw_tile(203-i*40+j*11+padding+melds_padding[i],225,t)
