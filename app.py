@@ -40,6 +40,7 @@ class App:
         self.kakan_tile = []
         self.yakunashi = False
         self.furiten = False
+        self.gamemode = 1
 
         #self.p1.hands = MahjongTile.make_hands_set('129','19','19','1234','123') #和了テスト(国士無双13面待ち)
         #self.p1.hands = MahjongTile.make_hands_set('1122','5566','3388','34') #ポンテスト
@@ -52,10 +53,17 @@ class App:
 
     def update(self):
         click = False
+        if self.screen == 'finished': return()
         if pyxel.btnp(pyxel.MOUSE_LEFT_BUTTON):
             if self.screen in ['ryukyoku','score']:
                 self.table = self.table.next_round()
                 self.p1,self.p2,self.p3,self.p4 = self.table.players
+                if self.gamemode==1 and self.table.wind=='nan':
+                    self.screen = 'finished'
+                    return()
+                if min([int(j.points) for j in self.table.players]) < 0:
+                    self.screen = 'finished'
+                    return()
                 self.init_var()
                 return()
 
@@ -222,8 +230,8 @@ class App:
         if self.screen == 'score':
             pyxel.cls(3)
             if self.p1.score_han() < 13:
-                pyxel.text(70,70,str(self.p1.score_fu())+' FU',0)
-                pyxel.text(70,80,str(self.p1.score_han())+' HAN',0)
+                pyxel.text(90,70,str(self.p1.score_fu())+' FU',0)
+                pyxel.text(90,80,str(self.p1.score_han())+' HAN',0)
             else:
                 if self.p1.is_mangan: in_x=0;si_x=4
                 if self.p1.is_haneman: in_x=2;si_x=4
@@ -231,13 +239,13 @@ class App:
                 if self.p1.is_sanbaiman: in_x=6;si_x=6
                 if self.p1.is_kazoeyakuman: in_x=9;si_x=8
                 if self.p1.yakuman_count()>0: in_x =11;si_x=4
-                pyxel.bltm(70,70,0,in_x*2,24,si_x,2,7)
-            pyxel.text(70,90,str(self.p1.score())+' Points',0)
-            pyxel.text(70,100,'Dora: '+str(self.p1.displayed_doras()),0)
-            pyxel.text(70,110,'AkaDora: '+str(self.p1.akadoras()),0)
-            pyxel.text(70,120,'YAKU:',0)
+                pyxel.bltm(90,70,0,in_x*2,24,si_x,2,7)
+            pyxel.text(90,90,str(self.p1.score())+' Points',0)
+            pyxel.text(90,100,'Dora: '+str(self.p1.displayed_doras()),0)
+            pyxel.text(90,110,'AkaDora: '+str(self.p1.akadoras()),0)
+            pyxel.text(90,120,'YAKU:',0)
             for i,y in enumerate(self.p1.yakus()):
-                pyxel.text(100,120+i*10,y,0)
+                pyxel.text(120,120+i*10,y,0)
             self.draw_hands()
             for i,t in enumerate(self.table.dora_showing_tiles):
                 self.draw_tile_only(10+i*11,10,t,0)
@@ -245,8 +253,22 @@ class App:
                 for i,t in enumerate(self.table.uradora_showing_tiles):
                     self.draw_tile_only(10+i*10,28,t,0)
             self.draw_players_score()
-        elif self.screen == 'test':
-            pass
+        elif self.screen == 'finished':
+            pyxel.cls(3)
+            i_x = [105,165,105,50]
+            i_y = [190,125,50,125]
+            score_x = [110,210,110,10]
+            score_y = [220,130,30,130]
+            for i,p in enumerate(self.table.players):
+                pyxel.text(score_x[i]-(len(str(p.points))-6)*3,score_y[i],str(p.points),0)
+            p_scores = []
+            for i in self.table.players:
+                p_scores.append(i.points)
+            p_scores = sorted(p_scores)[::-1]
+            for i,p in enumerate(self.table.players):
+                pyxel.bltm(i_x[i],i_y[i],0,(p_scores.index(p.points)+1)*2,22,2,2,7)
+                pyxel.bltm(i_x[i]+15,i_y[i],0,18,20,2,2,7)
+
         elif self.screen == 'ryukyoku':
             pyxel.cls(3)
             pyxel.bltm(100,110,0,4,20,4,2,7)
@@ -274,7 +296,7 @@ class App:
             self.draw_hands()
             for i,t in enumerate(self.table.dora_showing_tiles):
                 self.draw_tile_only(10+i*11,10,t,0)
-            wind_x = [97, 132, 139, 95]
+            wind_x = [97, 132, 139, 96]
             wind_y = [125, 132, 101, 102]
             score_x = [108,127,118,98]
             score_y = [135,125,102,112]
