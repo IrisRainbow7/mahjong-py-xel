@@ -29,7 +29,7 @@ class App:
         self.wait_kakan = False
         self.ok = False
         self.cancel = False
-        self.screen = ""
+        self.screen = "start"
         self.prev_player = None
         self.riichi_this_turn = False
         self.melds_padding = [0]
@@ -46,16 +46,49 @@ class App:
         #self.p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #チーテスト
         #self.p1.hands = MahjongTile.make_hands_set('234','456','234678','','12') #リーチテスト
         #self.p1.hands = MahjongTile.make_hands_set('279','456','444469','','12') #暗槓テスト
+        #self.p1.hands = MahjongTile.make_hands_set('45','3459999','11678','','') #嶺上開花テスト
         #self.p1.hands = MahjongTile.make_hands_set('222','444','777469','','12') #明槓テスト
 
     def update(self):
+        if self.screen == 'start':
+            self.screen = ''
+            start = False
+            for i in self.table.players[1:]:
+                if i.oya: start = True
+                if start:
+                    if not i.oya:
+                        self.table.draw(i)
+                    discard_tile = i.hands[random.randrange(14)]
+                    self.prev_player = i
+                    i.discard(discard_tile)
+                    if self.p1.can_ron(discard_tile):
+                        self.wait_ron = True
+                        self.wait_btn = True
+                        break
+                    elif self.p1.can_minkan(discard_tile) and (not self.p1.is_riichi):
+                        self.wait_daiminkan = True
+                        self.wait_btn = True
+                        break
+                    elif self.p1.can_pon(discard_tile) and (not self.p1.is_riichi):
+                        self.wait_pon = True
+                        self.wait_btn = True
+                        break
+                    elif i == self.p4 and self.p1.can_chi(discard_tile) and (not self.p1.is_riichi):
+                        self.wait_chi = True
+                        self.wait_btn = True
+                        break
+            else:
+                print('draw')
+                self.riichi_this_turn = False
+                self.table.draw(self.p1)
+
         click = False
         if self.screen == 'finished': return()
         if pyxel.btnp(pyxel.MOUSE_LEFT_BUTTON):
             if self.screen in ['ryukyoku','score']:
                 self.table = self.table.next_round()
                 self.p1,self.p2,self.p3,self.p4 = self.table.players
-                if self.gamemode == 1 and self.table.wind == 'nan':
+                if (self.gamemode == 1 and self.table.wind == 'nan') or (self.gamemode == 2 and self.table.wind == 'sha'):
                     self.screen = 'finished'
                     return()
                 if min([int(j.points) for j in self.table.players]) < 0:
