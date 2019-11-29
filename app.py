@@ -9,9 +9,10 @@ class App:
         pyxel.mouse(True)
         pyxel.load('Mahjongpai.pyxres')
         self.table = MahjongTable(oya_player=random.randrange(1,5),kandora_sokumekuri=True)
+        #self.table = MahjongTable(oya_player=1,kandora_sokumekuri=True)
         self.p1,self.p2,self.p3,self.p4 = self.table.players
-#        for i in range(68):
-#            self.table.tiles.pop(0)
+        #for i in range(68):
+        #    self.table.tiles.pop(0)
         self.init_var()
         pyxel.run(self.update, self.draw)
 
@@ -29,7 +30,7 @@ class App:
         self.wait_kakan = False
         self.ok = False
         self.cancel = False
-        self.screen = "start"
+        self.screen = 'start'
         self.prev_player = None
         self.riichi_this_turn = False
         self.melds_padding = [0]
@@ -161,7 +162,7 @@ class App:
         if self.p1.is_hora():
             self.wait_tumo = True
             self.wait_btn = True
-        if self.p1.is_menzen() and self.p1.is_tenpai() and (not self.p1.is_riichi) and (not self.wait_btn) and (not self.riichi_this_turn):
+        if self.p1.is_menzen() and self.p1.is_tenpai() and (not self.p1.is_riichi) and (not self.wait_btn) and (not self.riichi_this_turn) and (not self.wait_btn):
             self.wait_riichi = True
             self.riichi_this_turn = True
             self.wait_btn = True
