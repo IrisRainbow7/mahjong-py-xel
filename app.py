@@ -113,14 +113,6 @@ class App:
                     self.wait_daiminkan = True
                     self.wait_btn = True
                     break
-                elif self.p1.can_ankan() and (not self.p1.is_riichi):
-                    self.wait_ankan = True
-                    self.wait_btn = True
-                    break
-                elif self.p1.can_kakan() and (not self.p1.is_riichi):
-                    self.wait_kakan = True
-                    self.wait_btn = True
-                    break
                 elif self.p1.can_pon(discard_tile) and (not self.p1.is_riichi):
                     self.wait_pon = True
                     self.wait_btn = True
@@ -140,6 +132,13 @@ class App:
             self.wait_riichi = True
             self.riichi_this_turn = True
             self.wait_btn = True
+        elif self.p1.can_ankan() and (not self.p1.is_riichi):
+            self.wait_ankan = True
+            self.wait_btn = True
+        elif self.p1.can_kakan() and (not self.p1.is_riichi):
+            self.wait_kakan = True
+            self.wait_btn = True
+
         if self.ok:
             if self.wait_tumo:
                 if len(self.p1.yakus()) == 0:
@@ -304,7 +303,7 @@ class App:
                 self.draw_discards(p, i*90)
             if self.wait_tumo:
                 self.draw_button('TUMO','PASS')
-            if self.wait_pon or self.wait_chi or self.wait_ron or self.wait_daiminkan or self.wait_ankan or self.wait_kakan:
+            if self.wait_pon or self.wait_chi or self.wait_ron or self.wait_daiminkan:
                 index = self.table.players.index(self.prev_player)
                 if index == 2:
                     size_x = 1
@@ -434,7 +433,6 @@ class App:
                             self.draw_tile(189-i*40+j*11+padding+melds_padding[i],225,t)
                 elif any([(t in k) for k in self.p1.ankans]):  # ankan
                     tmp_padding = -13
-                    self.ankan_count += 1
                     if j == 0:
                         self.draw_tile_back(199-i*40+j*11+melds_padding[i],225)
                     elif j == 2:
